@@ -53,7 +53,7 @@
     const end = document.getElementById("endTime");
 
     for (let h = 0; h < 24; h++) {
-      for (let m = 0; m < 60; m += 15) {
+      for (let m = 0; m < 60; m += 30) {
         const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
         const option1 = new Option(time, time);
         const option2 = new Option(time, time);
