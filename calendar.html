@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>予定管理チャット風ツール</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+    label { display: block; margin-top: 10px; }
+    select, input, button { width: 100%; padding: 8px; margin-top: 5px; }
+    textarea { width: 100%; height: 300px; margin-top: 20px; white-space: pre-wrap; }
+    .emoji { font-size: 1.2em; }
+  </style>
+</head>
+<body>
+
+<h2>予定登録（LINE風）</h2>
+
+<label>📅 日付（6月のみ想定）</label>
+<input type="date" id="dateInput">
+
+<label>🕒 開始時間</label>
+<select id="startTime"></select>
+
+<label>🕒 終了時間</label>
+<select id="endTime"></select>
+
+<label>✏️ 予定タイトル</label>
+<input type="text" id="titleInput" placeholder="例：中PM研修">
+
+<label>📍 場所や補足</label>
+<input type="text" id="locationInput" placeholder="例：VB">
+
+<label>🎉 絵文字</label>
+<select id="emojiSelect">
+  <option value="">なし</option>
+  <option value="💍">💍</option>
+  <option value="🐈‍⬛">🐈‍⬛</option>
+  <option value="🎬">🎬</option>
+  <option value="🍖">🍖</option>
+</select>
+
+<button onclick="addSchedule()">＋ 予定を登録</button>
+
+<h3>📤 出力結果（コピーしてLINEなどへ）</h3>
+<textarea id="outputArea" readonly>6月予定</textarea>
+
+<script>
+  const schedule = {};
+
+  // 15分刻みの時間を生成
+  function populateTimeSelects() {
+    const start = document.getElementById("startTime");
+    const end = document.getElementById("endTime");
+
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        const option1 = new Option(time, time);
+        const option2 = new Option(time, time);
+        start.add(option1.cloneNode(true));
+        end.add(option2.cloneNode(true));
+      }
+    }
+  }
+
+  populateTimeSelects();
+
+  function addSchedule() {
+    const date = document.getElementById("dateInput").value;
+    const start = document.getElementById("startTime").value;
+    const end = document.getElementById("endTime").value;
+    const title = document.getElementById("titleInput").value;
+    const location = document.getElementById("locationInput").value;
+    const emoji = document.getElementById("emojiSelect").value;
+
+    if (!date || !start || !end || !title) {
+      alert("すべての項目を入力してください。");
+      return;
+    }
+
+    const day = new Date(date).getDate().toString().padStart(2, '0');
+    const line = `${start}-${end}${emoji}${title}${location ? '(' + location + ')' : ''}`;
+
+    if (!schedule[day]) schedule[day] = [];
+    schedule[day].push(line);
+
+    renderOutput();
+    clearInputs();
+  }
+
+  function renderOutput() {
+    let output = "6月予定\n";
+    for (let i = 1; i <= 30; i++) {
+      const dayStr = String(i).padStart(2, '0');
+      output += dayStr + '日';
+      if (schedule[dayStr]) {
+        output += '\t' + schedule[dayStr].join('\n\t') + '\n';
+      } else {
+        output += '\n';
+      }
+    }
+    document.getElementById("outputArea").value = output.trim();
+  }
+
+  function clearInputs() {
+    document.getElementById("titleInput").value = "";
+    document.getElementById("locationInput").value = "";
+    document.getElementById("emojiSelect").value = "";
+  }
+</script>
+
+</body>
+</html>
