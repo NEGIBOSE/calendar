@@ -16,7 +16,6 @@
       font-weight: bold;
     }
     select, input, button {
-      display: block;
       width: 100%;
       padding: 10px;
       margin-top: 2px;
@@ -49,25 +48,29 @@
       font-size: 1em;
       pointer-events: none;
     }
-    .time-selects {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.time-select {
-  flex: 1;
-}
-
-.time-select select {
-  height: 150px;
-  overflow-y: auto;
-}
+    .time-row {
+      display: flex;
+      gap: 10px;
+    }
+    .time-row select {
+      flex: 1;
+      height: 120px;
+    }
+    #outputArea {
+      white-space: pre-wrap;
+      border: 1px solid #ccc;
+      padding: 10px;
+      height: 300px;
+      overflow-y: auto;
+      background: #fdfdfd;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
 
 <h2>予定登録（LINE風）</h2>
+
 <label for="monthSelect">🗓️ 表示月</label>
 <div class="input-wrapper" onclick="document.getElementById('monthSelect').showPicker()">
   <input type="month" id="monthSelect">
@@ -78,16 +81,16 @@
   <input type="date" id="dateInput">
 </div>
 
-<div class="time-selects">
-    <div class="time-select">
-      <label for="startTime">🕒 開始時間</label>
-      <select id="startTime" size="6"></select>
-    </div>
-    <div class="time-select">
-      <label for="endTime">🕒 終了時間</label>
-      <select id="endTime" size="6"></select>
-    </div>
+<div class="time-row">
+  <div style="flex: 1;">
+    <label>🕒 開始時間</label>
+    <select id="startTime" size="6"></select>
   </div>
+  <div style="flex: 1;">
+    <label>🕒 終了時間</label>
+    <select id="endTime" size="6"></select>
+  </div>
+</div>
 
 <label>✏️ 予定内容</label>
 <select id="titleSelect">
@@ -101,7 +104,6 @@
   <option value="肉の日">肉の日</option>
   <option value="その他">その他</option>
 </select>
-
 <label id="customTitleLabel" style="display:none">✏️ その他の予定</label>
 <input type="text" id="customTitleInput" placeholder="例：出張（大阪）" style="display:none">
 
@@ -116,7 +118,6 @@
   <option value="自宅">自宅</option>
   <option value="その他">その他</option>
 </select>
-
 <label id="customLocationLabel" style="display:none">✏️ その他の場所</label>
 <input type="text" id="customLocationInput" placeholder="例：新宿駅" style="display:none">
 
@@ -131,46 +132,35 @@
 <button onclick="addSchedule()">＋ 登録</button>
 
 <h3>📤 出力（LINEコピペ用）</h3>
-<div id="outputArea" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; background: #fdfdfd;"></div>
+<div id="outputArea"></div>
 <button onclick="copyOutput()">📋 コピー</button>
+<button onclick="deletePastEntries()">🗑️ 過去の予定を削除</button>
 
 <script>
   const schedule = {};
   const holidays = ["2025-06-16"];
   const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
 
-  window.onload = function () {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth(); // 0-based
-  const date = today.getDate();
+  function formatTime(time) {
+    const [h, m] = time.split(":");
+    return m === "30" ? `${parseInt(h)}半` : `${parseInt(h)}`;
+  }
 
-  // 表示月（1〜15日 → 当月, 16日以降 → 翌月）
-  const targetDate = date <= 15 ? new Date(year, month, 1) : new Date(year, month + 1, 1);
+  function isWeekendOrHoliday(dateStr) {
+    const date = new Date(dateStr);
+    const day = date.getDay();
+    return day === 0 || day === 6 || holidays.includes(dateStr);
+  }
 
-  const displayYear = targetDate.getFullYear();
-  const displayMonth = String(targetDate.getMonth() + 1).padStart(2, '0');
-  const displayMonthStr = `${displayYear}-${displayMonth}`;
-
-  const monthSelect = document.getElementById("monthSelect");
-  const dateInput = document.getElementById("dateInput");
-
-  monthSelect.value = displayMonthStr;
-
-  const lastDay = new Date(displayYear, targetDate.getMonth() + 1, 0).getDate();
-  dateInput.min = `${displayYear}-${displayMonth}-01`;
-  dateInput.max = `${displayYear}-${displayMonth}-${String(lastDay).padStart(2, '0')}`;
-  dateInput.value = `${displayYear}-${displayMonth}-01`;
-
-  renderOutput();
-};
-
-  function renderOutput() {
+  function renderOutput(options = {}) {
     const month = document.getElementById("monthSelect").value;
     const [year, mRaw] = month.split("-");
     const m = mRaw.padStart(2, '0');
     const lastDay = new Date(year, m, 0).getDate();
     let output = `${parseInt(m)}月予定\n`;
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const hidePast = options.hidePast || false;
 
     for (let i = 1; i <= lastDay; i++) {
       const dayStr = String(i).padStart(2, '0');
@@ -178,6 +168,8 @@
       const dateObj = new Date(dateStr);
       const weekday = weekDays[dateObj.getDay()];
       const plans = schedule[dateStr];
+
+      if (hidePast && dateStr < todayStr) continue;
 
       if (plans && plans.length > 0) {
         output += `${dayStr}日(${weekday})　${plans.join('　')}\n`;
@@ -187,17 +179,6 @@
     }
 
     document.getElementById("outputArea").textContent = output.trim();
-  }
-
-  function isWeekendOrHoliday(dateStr) {
-    const date = new Date(dateStr);
-    const day = date.getDay();
-    return day === 0 || day === 6 || holidays.includes(dateStr);
-  }
-
-  function formatTime(time) {
-    const [h, m] = time.split(":");
-    return m === "30" ? `${parseInt(h)}半` : `${parseInt(h)}`;
   }
 
   function populateTimeSelects() {
@@ -256,14 +237,12 @@
 
     schedule[date].push(newEntry);
     schedule[date].sort((a, b) => {
-      const getStartTime = s => {
+      const getStart = s => {
         const match = s.match(/^(\d+)(半)?-/);
         if (!match) return 0;
-        const hour = parseInt(match[1]);
-        const half = match[2] ? 0.5 : 0;
-        return hour + half;
+        return parseInt(match[1]) + (match[2] ? 0.5 : 0);
       };
-      return getStartTime(a) - getStartTime(b);
+      return getStart(a) - getStart(b);
     });
 
     renderOutput();
@@ -271,19 +250,31 @@
   }
 
   function clearInputs() {
-    document.getElementById("emojiSelect").value = "";
-    document.getElementById("locationSelect").value = "";
-    document.getElementById("customLocationInput").value = "";
-    document.getElementById("customLocationLabel").style.display = "none";
-    document.getElementById("customLocationInput").style.display = "none";
-    document.getElementById("titleSelect").value = "";
-    document.getElementById("customTitleInput").value = "";
-    document.getElementById("customTitleLabel").style.display = "none";
-    document.getElementById("customTitleInput").style.display = "none";
-    document.getElementById("startTime").value = "";
-    document.getElementById("endTime").innerHTML = "";
+  document.getElementById("emojiSelect").value = "";
+  document.getElementById("locationSelect").value = "";
+  document.getElementById("customLocationInput").value = "";
+  document.getElementById("customLocationLabel").style.display = "none";
+  document.getElementById("customLocationInput").style.display = "none";
+  document.getElementById("titleSelect").value = "";
+  document.getElementById("customTitleInput").value = "";
+  document.getElementById("customTitleLabel").style.display = "none";
+  document.getElementById("customTitleInput").style.display = "none";
+  document.getElementById("startTime").selectedIndex = 0;
+  document.getElementById("endTime").innerHTML = "";
+}
+
+  function copyOutput() {
+    const outputText = document.getElementById("outputArea").textContent;
+    navigator.clipboard.writeText(outputText).then(() => {
+      alert("出力内容をコピーしました！");
+    });
   }
 
+  function deletePastEntries() {
+    renderOutput({ hidePast: true });
+  }
+
+  // カスタムタイトル/場所表示切替
   document.getElementById("titleSelect").addEventListener("change", function () {
     const isOther = this.value === "その他";
     document.getElementById("customTitleLabel").style.display = isOther ? "block" : "none";
@@ -296,27 +287,25 @@
     document.getElementById("customLocationInput").style.display = isOther ? "block" : "none";
   });
 
-  document.getElementById("monthSelect").addEventListener("change", () => {
-    const month = document.getElementById("monthSelect").value;
-    const [year, monthNum] = month.split("-");
-    const dateInput = document.getElementById("dateInput");
-    dateInput.min = `${year}-${monthNum}-01`;
-    const lastDay = new Date(year, monthNum, 0).getDate();
-    dateInput.max = `${year}-${monthNum}-${String(lastDay).padStart(2, "0")}`;
-    dateInput.value = `${year}-${monthNum}-01`;
-    renderOutput();
-  });
-
-  function copyOutput() {
-    const output = document.getElementById("outputArea").textContent;
-    navigator.clipboard.writeText(output).then(() => {
-      alert("出力内容をコピーしました！");
-    }).catch(err => {
-      alert("コピーに失敗しました: " + err);
-    });
+  // 月初期値の自動設定
+  function setDefaultMonth() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const day = today.getDate();
+    const displayMonth = day <= 15 ? month : month + 1;
+    const correctedMonth = (displayMonth > 12) ? 1 : displayMonth;
+    const correctedYear = (displayMonth > 12) ? year + 1 : year;
+    const formatted = `${correctedYear}-${String(correctedMonth).padStart(2, '0')}`;
+    document.getElementById("monthSelect").value = formatted;
   }
 
-  populateTimeSelects();
+  // 初期化
+  window.onload = () => {
+    setDefaultMonth();
+    populateTimeSelects();
+    renderOutput();
+  };
 </script>
 
 </body>
