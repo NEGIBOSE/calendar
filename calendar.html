@@ -83,6 +83,7 @@
 
 <h3>📤 出力（LINEコピペ用）</h3>
 <div id="outputArea" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; background: #fdfdfd;"></div>
+<button onclick="copyOutput()">📋 コピー</button>
 
 <script>
   const schedule = {};
@@ -192,6 +193,14 @@
   });
 
   populateTimeSelects();
+  function copyOutput() {
+  const output = document.getElementById("outputArea").textContent;
+  navigator.clipboard.writeText(output).then(() => {
+    alert("出力内容をコピーしました！");
+  }).catch(err => {
+    alert("コピーに失敗しました: " + err);
+  });
+}
 </script>
 
 </body>
