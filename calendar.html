@@ -4,10 +4,27 @@
   <meta charset="UTF-8">
   <title>予定管理ツール</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    label { display: block; margin-top: 10px; }
-    select, input, button { width: 100%; padding: 8px; margin-top: 5px; }
-    textarea { width: 100%; height: 300px; margin-top: 20px; white-space: pre-wrap; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    select, input, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+    textarea {
+      width: 100%;
+      height: 300px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
@@ -40,8 +57,6 @@
 <input type="text" id="customTitleInput" placeholder="例：出張（大阪）" style="display:none">
 
 <label>📍 場所</label>
-<label id="customLocationLabel" style="display:none">✏️ その他の場所</label>
-<input type="text" id="customLocationInput" placeholder="例：新宿駅" style="display:none">
 <select id="locationSelect">
   <option value="">選択なし</option>
   <option value="池袋">池袋</option>
@@ -52,6 +67,9 @@
   <option value="自宅">自宅</option>
   <option value="その他">その他</option>
 </select>
+
+<label id="customLocationLabel" style="display:none">✏️ その他の場所</label>
+<input type="text" id="customLocationInput" placeholder="例：新宿駅" style="display:none">
 
 <label>👥 絵文字（人物）</label>
 <select id="emojiSelect">
@@ -64,117 +82,117 @@
 <button onclick="addSchedule()">＋ 登録</button>
 
 <h3>📤 出力（LINEコピペ用）</h3>
-<textarea id="outputArea" readonly>6月予定</textarea>
+<div id="outputArea" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; background: #fdfdfd;"></div>
 
-<!-- 省略: <head>とフォーム部分は前回と同じ -->
-    <script>
-        // 📌 曜日を日本語で取得するための配列
-const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+<script>
+  const schedule = {};
+  const holidays = ["2025-06-16"];
+  const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
 
-function renderOutput() {
-  let output = "6月予定\n";
-  for (let i = 1; i <= 30; i++) {
-    const dayStr = String(i).padStart(2, '0');
-    const dateStr = `2025-06-${dayStr}`;
-    const dateObj = new Date(dateStr);
-    const weekday = weekDays[dateObj.getDay()]; // 曜日を取得
+  function renderOutput() {
+    let output = "6月予定\n";
 
-    if (schedule[dayStr]) {
-      output += `${dayStr}日(${weekday})\t${schedule[dayStr].join('\n\t')}\n`;
-    } else if (isWeekendOrHoliday(dateStr)) {
-      output += `${dayStr}日(${weekday})\n`;
+    for (let i = 1; i <= 30; i++) {
+      const dayStr = String(i).padStart(2, '0');
+      const dateStr = `2025-06-${dayStr}`;
+      const dateObj = new Date(dateStr);
+      const dayOfWeek = dateObj.getDay();
+      const weekday = weekDays[dayOfWeek];
+
+      if (schedule[dayStr]) {
+        const plans = schedule[dayStr].join('　');
+        output += `${dayStr}日(${weekday})　${plans}\n`;
+      } else if (isWeekendOrHoliday(dateStr)) {
+        output += `${dayStr}日(${weekday})\n`;
+      }
     }
-  }
-  document.getElementById("outputArea").value = output.trim();
-}
-        const schedule = {};
-        const holidays = ["2025-06-16"];
-      
-        function populateTimeSelects() {
-          const times = [];
-          for (let h = 0; h < 24; h++) {
-            times.push(`${String(h).padStart(2, '0')}:00`);
-            times.push(`${String(h).padStart(2, '0')}:30`);
-          }
-          times.forEach(time => {
-            const opt1 = new Option(time, time);
-            const opt2 = new Option(time, time);
-            document.getElementById("startTime").add(opt1);
-            document.getElementById("endTime").add(opt2);
-          });
-        }
-      
-        populateTimeSelects();
-      
-        function formatTime(time) {
-          const [h, m] = time.split(":");
-          return m === "30" ? `${parseInt(h)}半` : `${parseInt(h)}`;
-        }
-      
-        function isWeekendOrHoliday(dateStr) {
-          const date = new Date(dateStr);
-          const day = date.getDay();
-          const isHoliday = holidays.includes(dateStr);
-          return day === 0 || day === 6 || isHoliday;
-        }
-        document.getElementById("titleSelect").addEventListener("change", function () {
-  const isOther = this.value === "その他";
-  document.getElementById("customTitleLabel").style.display = isOther ? "block" : "none";
-  document.getElementById("customTitleInput").style.display = isOther ? "block" : "none";
-});
-        // その他の場所入力欄の切り替え
-        document.getElementById("locationSelect").addEventListener("change", function () {
-          const isOther = this.value === "その他";
-          document.getElementById("customLocationLabel").style.display = isOther ? "block" : "none";
-          document.getElementById("customLocationInput").style.display = isOther ? "block" : "none";
-        });
-      
-        function addSchedule() {
-          const date = document.getElementById("dateInput").value;
-          const start = document.getElementById("startTime").value;
-          const end = document.getElementById("endTime").value;
-          const emoji = document.getElementById("emojiSelect").value;
-          const selectedTitle = document.getElementById("titleSelect").value;
-const customTitle = document.getElementById("customTitleInput").value.trim();
-const title = selectedTitle === "その他" ? customTitle : selectedTitle;
-          const selectedLocation = document.getElementById("locationSelect").value;
-          const customLocation = document.getElementById("customLocationInput").value.trim();
-          const location = selectedLocation === "その他" ? customLocation : selectedLocation;
-          document.getElementById("titleSelect").value = "";
-document.getElementById("customTitleInput").value = "";
-document.getElementById("customTitleLabel").style.display = "none";
-document.getElementById("customTitleInput").style.display = "none";
-          if (!date || !start || !end || !title || (selectedLocation === "その他" && !customLocation)) {
-            alert("すべての項目を入力してください。");
-            return;
-          }
-      
-          const day = new Date(date).getDate().toString().padStart(2, '0');
-          const timeStr = `${formatTime(start)}-${formatTime(end)}`;
-          const newEntry = `${timeStr}${emoji}${title}${location ? `(${location})` : ''}`;
-      
-          // 重複チェック
-          if (schedule[day] && schedule[day].includes(newEntry)) {
-            alert("同じ予定がすでに登録されています。");
-            return;
-          }
-      
-          if (!schedule[day]) schedule[day] = [];
-          schedule[day].push(newEntry);
-      
-          renderOutput();
-          clearInputs();
-        }
-      
 
-      
-        function clearInputs() {
-          document.getElementById("emojiSelect").value = "";
-          document.getElementById("locationSelect").value = "";
-          document.getElementById("customLocationInput").value = "";
-          document.getElementById("customLocationLabel").style.display = "none";
-          document.getElementById("customLocationInput").style.display = "none";
-        }
-      </script>
+    document.getElementById("outputArea").textContent = output.trim();
+  }
+
+  function populateTimeSelects() {
+    const times = [];
+    for (let h = 0; h < 24; h++) {
+      times.push(`${String(h).padStart(2, '0')}:00`);
+      times.push(`${String(h).padStart(2, '0')}:30`);
+    }
+    times.forEach(time => {
+      document.getElementById("startTime").add(new Option(time, time));
+      document.getElementById("endTime").add(new Option(time, time));
+    });
+  }
+
+  function formatTime(time) {
+    const [h, m] = time.split(":");
+    return m === "30" ? `${parseInt(h)}半` : `${parseInt(h)}`;
+  }
+
+  function isWeekendOrHoliday(dateStr) {
+    const date = new Date(dateStr);
+    const day = date.getDay();
+    return day === 0 || day === 6 || holidays.includes(dateStr);
+  }
+
+  function addSchedule() {
+    const date = document.getElementById("dateInput").value;
+    const start = document.getElementById("startTime").value;
+    const end = document.getElementById("endTime").value;
+    const emoji = document.getElementById("emojiSelect").value;
+
+    const selectedTitle = document.getElementById("titleSelect").value;
+    const customTitle = document.getElementById("customTitleInput").value.trim();
+    const title = selectedTitle === "その他" ? customTitle : selectedTitle;
+
+    const selectedLocation = document.getElementById("locationSelect").value;
+    const customLocation = document.getElementById("customLocationInput").value.trim();
+    const location = selectedLocation === "その他" ? customLocation : selectedLocation;
+
+    if (!date || !start || !end || !title || (selectedLocation === "その他" && !customLocation)) {
+      alert("すべての項目を入力してください。");
+      return;
+    }
+
+    const day = new Date(date).getDate().toString().padStart(2, '0');
+    const timeStr = `${formatTime(start)}-${formatTime(end)}`;
+    const newEntry = `${timeStr}${emoji}${title}${location ? `(${location})` : ''}`;
+
+    if (!schedule[day]) schedule[day] = [];
+    if (schedule[day].includes(newEntry)) {
+      alert("同じ予定がすでに登録されています。");
+      return;
+    }
+
+    schedule[day].push(newEntry);
+    renderOutput();
+    clearInputs();
+  }
+
+  function clearInputs() {
+    document.getElementById("emojiSelect").value = "";
+    document.getElementById("locationSelect").value = "";
+    document.getElementById("customLocationInput").value = "";
+    document.getElementById("customLocationLabel").style.display = "none";
+    document.getElementById("customLocationInput").style.display = "none";
+    document.getElementById("titleSelect").value = "";
+    document.getElementById("customTitleInput").value = "";
+    document.getElementById("customTitleLabel").style.display = "none";
+    document.getElementById("customTitleInput").style.display = "none";
+  }
+
+  document.getElementById("titleSelect").addEventListener("change", function () {
+    const isOther = this.value === "その他";
+    document.getElementById("customTitleLabel").style.display = isOther ? "block" : "none";
+    document.getElementById("customTitleInput").style.display = isOther ? "block" : "none";
+  });
+
+  document.getElementById("locationSelect").addEventListener("change", function () {
+    const isOther = this.value === "その他";
+    document.getElementById("customLocationLabel").style.display = isOther ? "block" : "none";
+    document.getElementById("customLocationInput").style.display = isOther ? "block" : "none";
+  });
+
+  populateTimeSelects();
+</script>
+
 </body>
 </html>
