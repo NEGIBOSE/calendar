@@ -49,6 +49,20 @@
       font-size: 1em;
       pointer-events: none;
     }
+    .time-selects {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.time-select {
+  flex: 1;
+}
+
+.time-select select {
+  height: 150px;
+  overflow-y: auto;
+}
   </style>
 </head>
 <body>
@@ -64,11 +78,16 @@
   <input type="date" id="dateInput">
 </div>
 
-<label>🕒 開始時間</label>
-<select id="startTime" size="6"></select>
-
-<label>🕒 終了時間</label>
-<select id="endTime" size="6"></select>
+<div class="time-selects">
+    <div class="time-select">
+      <label for="startTime">🕒 開始時間</label>
+      <select id="startTime" size="6"></select>
+    </div>
+    <div class="time-select">
+      <label for="endTime">🕒 終了時間</label>
+      <select id="endTime" size="6"></select>
+    </div>
+  </div>
 
 <label>✏️ 予定内容</label>
 <select id="titleSelect">
