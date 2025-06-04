@@ -29,194 +29,208 @@
 </head>
 <body>
 
-  <h2>予定登録（LINE風）</h2>
+<h2>予定登録（LINE風）</h2>
+<label>🗓️ 表示月</label>
+<input type="month" id="monthSelect" value="2025-06">
+<label>📅 日付</label>
+<input type="date" id="dateInput">
 
-  <label>🗓️ 表示月</label>
-  <input type="month" id="monthSelect" value="2025-06">
+<label>🕒 開始時間</label>
+<select id="startTime"></select>
 
-  <label>📅 日付</label>
-  <input type="date" id="dateInput">
+<label>🕒 終了時間</label>
+<select id="endTime"></select>
 
-  <label>🕒 開始時間</label>
-  <select id="startTime"></select>
+<label>✏️ 予定内容</label>
+<select id="titleSelect">
+  <option value="">選択なし</option>
+  <option value="中PM研修">中PM研修</option>
+  <option value="秋田旅行">秋田旅行</option>
+  <option value="帰社日">帰社日</option>
+  <option value="スティッチ">スティッチ</option>
+  <option value="プレコンゼミ">プレコンゼミ</option>
+  <option value="着付け">着付け</option>
+  <option value="肉の日">肉の日</option>
+  <option value="その他">その他</option>
+</select>
 
-  <label>🕒 終了時間</label>
-  <select id="endTime"></select>
+<label id="customTitleLabel" style="display:none">✏️ その他の予定</label>
+<input type="text" id="customTitleInput" placeholder="例：出張（大阪）" style="display:none">
 
-  <label>✏️ 予定内容</label>
-  <select id="titleSelect">
-    <option value="">選択なし</option>
-    <option value="中PM研修">中PM研修</option>
-    <option value="秋田旅行">秋田旅行</option>
-    <option value="帰社日">帰社日</option>
-    <option value="スティッチ">スティッチ</option>
-    <option value="プレコンゼミ">プレコンゼミ</option>
-    <option value="着付け">着付け</option>
-    <option value="肉の日">肉の日</option>
-    <option value="その他">その他</option>
-  </select>
+<label>📍 場所</label>
+<select id="locationSelect">
+  <option value="">選択なし</option>
+  <option value="池袋">池袋</option>
+  <option value="VB">VB</option>
+  <option value="羽田空港">羽田空港</option>
+  <option value="秋田空港">秋田空港</option>
+  <option value="映画館">映画館</option>
+  <option value="自宅">自宅</option>
+  <option value="その他">その他</option>
+</select>
 
-  <label id="customTitleLabel" style="display:none">✏️ その他の予定</label>
-  <input type="text" id="customTitleInput" placeholder="例：出張（大阪）" style="display:none">
+<label id="customLocationLabel" style="display:none">✏️ その他の場所</label>
+<input type="text" id="customLocationInput" placeholder="例：新宿駅" style="display:none">
 
-  <label>📍 場所</label>
-  <select id="locationSelect">
-    <option value="">選択なし</option>
-    <option value="池袋">池袋</option>
-    <option value="VB">VB</option>
-    <option value="羽田空港">羽田空港</option>
-    <option value="秋田空港">秋田空港</option>
-    <option value="映画館">映画館</option>
-    <option value="自宅">自宅</option>
-    <option value="その他">その他</option>
-  </select>
+<label>👥 絵文字（人物）</label>
+<select id="emojiSelect">
+  <option value="">なし</option>
+  <option value="💍">💍 2人</option>
+  <option value="🐕">🐕 りょうたん</option>
+  <option value="🐈‍⬛">🐈‍⬛ やねたん</option>
+</select>
 
-  <label id="customLocationLabel" style="display:none">✏️ その他の場所</label>
-  <input type="text" id="customLocationInput" placeholder="例：新宿駅" style="display:none">
+<button onclick="addSchedule()">＋ 登録</button>
 
-  <label>👥 絵文字（人物）</label>
-  <select id="emojiSelect">
-    <option value="">なし</option>
-    <option value="💍">💍 2人</option>
-    <option value="🐕">🐕 りょうたん</option>
-    <option value="🐈‍⬛">🐈‍⬛ やねたん</option>
-  </select>
+<h3>📤 出力（LINEコピペ用）</h3>
+<div id="outputArea" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; background: #fdfdfd;"></div>
+<button onclick="copyOutput()">📋 コピー</button>
 
-  <button onclick="addSchedule()">＋ 登録</button>
+<script>
+  const schedule = {};
+  const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+  let holidays = {}; // APIで取得した祝日をここに格納
 
-  <h3>📤 出力（LINEコピペ用）</h3>
-  <div id="outputArea" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; background: #fdfdfd;"></div>
-  <button onclick="copyOutput()">📋 コピー</button>
-
-  <script>
-    const schedule = {};
-    const holidays = ["2025-06-16"];
-    const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
-
-    // 月を変更したときの日付制御
-    document.getElementById("monthSelect").addEventListener("change", () => {
-      const [year, monthNum] = document.getElementById("monthSelect").value.split("-");
-      const lastDay = new Date(year, monthNum, 0).getDate();
-      document.getElementById("dateInput").min = `${year}-${monthNum}-01`;
-      document.getElementById("dateInput").max = `${year}-${monthNum}-${String(lastDay).padStart(2, "0")}`;
-      document.getElementById("dateInput").value = `${year}-${monthNum}-01`;
-    });
-
-    // 「その他」の入力欄表示切替
-    document.getElementById("titleSelect").addEventListener("change", function () {
-      const isOther = this.value === "その他";
-      document.getElementById("customTitleLabel").style.display = isOther ? "block" : "none";
-      document.getElementById("customTitleInput").style.display = isOther ? "block" : "none";
-    });
-
-    document.getElementById("locationSelect").addEventListener("change", function () {
-      const isOther = this.value === "その他";
-      document.getElementById("customLocationLabel").style.display = isOther ? "block" : "none";
-      document.getElementById("customLocationInput").style.display = isOther ? "block" : "none";
-    });
-
-    function populateTimeSelects() {
-      const times = [];
-      for (let h = 0; h < 24; h++) {
-        times.push(`${String(h).padStart(2, '0')}:00`);
-        times.push(`${String(h).padStart(2, '0')}:30`);
-      }
-      times.forEach(time => {
-        document.getElementById("startTime").add(new Option(time, time));
-        document.getElementById("endTime").add(new Option(time, time));
-      });
-    }
-
-    function formatTime(time) {
-      const [h, m] = time.split(":");
-      return m === "30" ? `${parseInt(h)}半` : `${parseInt(h)}`;
-    }
-
-    function isWeekendOrHoliday(dateStr) {
-      const date = new Date(dateStr);
-      const day = date.getDay();
-      return day === 0 || day === 6 || holidays.includes(dateStr);
-    }
-
-    function addSchedule() {
-      const date = document.getElementById("dateInput").value;
-      const start = document.getElementById("startTime").value;
-      const end = document.getElementById("endTime").value;
-      const emoji = document.getElementById("emojiSelect").value;
-
-      const selectedTitle = document.getElementById("titleSelect").value;
-      const customTitle = document.getElementById("customTitleInput").value.trim();
-      const title = selectedTitle === "その他" ? customTitle : selectedTitle;
-
-      const selectedLocation = document.getElementById("locationSelect").value;
-      const customLocation = document.getElementById("customLocationInput").value.trim();
-      const location = selectedLocation === "その他" ? customLocation : selectedLocation;
-
-      if (!date || !start || !end || !title || (selectedLocation === "その他" && !customLocation)) {
-        alert("すべての項目を入力してください。");
-        return;
-      }
-
-      const timeStr = `${formatTime(start)}-${formatTime(end)}`;
-      const newEntry = `${timeStr}${emoji}${title}${location ? `(${location})` : ''}`;
-
-      if (!schedule[date]) schedule[date] = [];
-      if (schedule[date].includes(newEntry)) {
-        alert("同じ予定がすでに登録されています。");
-        return;
-      }
-
-      schedule[date].push(newEntry);
+  async function fetchHolidays() {
+    try {
+      const res = await fetch("https://holidays-jp.github.io/api/v1/date.json");
+      holidays = await res.json();
       renderOutput();
-      clearInputs();
+    } catch (error) {
+      console.error("祝日の取得に失敗しました:", error);
     }
+  }
 
-    function clearInputs() {
-      document.getElementById("emojiSelect").value = "";
-      document.getElementById("locationSelect").value = "";
-      document.getElementById("customLocationInput").value = "";
-      document.getElementById("customLocationLabel").style.display = "none";
-      document.getElementById("customLocationInput").style.display = "none";
-      document.getElementById("titleSelect").value = "";
-      document.getElementById("customTitleInput").value = "";
-      document.getElementById("customTitleLabel").style.display = "none";
-      document.getElementById("customTitleInput").style.display = "none";
-    }
+  function isWeekendOrHoliday(dateStr) {
+    const date = new Date(dateStr);
+    const day = date.getDay();
+    return day === 0 || day === 6 || holidays.hasOwnProperty(dateStr);
+  }
 
-    function renderOutput() {
-      const [year, mRaw] = document.getElementById("monthSelect").value.split("-");
-      const m = mRaw.padStart(2, '0');
-      const lastDay = new Date(year, m, 0).getDate();
-      let output = `${parseInt(m)}月予定\n`;
+  function renderOutput() {
+    const month = document.getElementById("monthSelect").value;
+    const [year, mRaw] = month.split("-");
+    const m = mRaw.padStart(2, '0');
+    const lastDay = new Date(year, m, 0).getDate();
+    let output = `${parseInt(m)}月予定\n`;
 
-      for (let i = 1; i <= lastDay; i++) {
-        const dayStr = String(i).padStart(2, '0');
-        const dateStr = `${year}-${m}-${dayStr}`;
-        const weekday = weekDays[new Date(dateStr).getDay()];
-        const plans = schedule[dateStr];
+    for (let i = 1; i <= lastDay; i++) {
+      const dayStr = String(i).padStart(2, '0');
+      const dateStr = `${year}-${m}-${dayStr}`;
+      const dateObj = new Date(dateStr);
+      const weekday = weekDays[dateObj.getDay()];
+      const plans = schedule[dateStr];
 
-        if (plans && plans.length > 0) {
-          output += `${dayStr}日(${weekday})　${plans.join('　')}\n`;
-        } else if (isWeekendOrHoliday(dateStr)) {
-          output += `${dayStr}日(${weekday})\n`;
-        }
+      if (plans && plans.length > 0) {
+        output += `${dayStr}日(${weekday})　${plans.join('　')}\n`;
+      } else if (isWeekendOrHoliday(dateStr)) {
+        output += `${dayStr}日(${weekday})\n`;
       }
-
-      document.getElementById("outputArea").textContent = output.trim();
     }
 
-    function copyOutput() {
-      const output = document.getElementById("outputArea").textContent;
-      navigator.clipboard.writeText(output).then(() => {
-        alert("出力内容をコピーしました！");
-      }).catch(err => {
-        alert("コピーに失敗しました: " + err);
-      });
+    document.getElementById("outputArea").textContent = output.trim();
+  }
+
+  function populateTimeSelects() {
+    const times = [];
+    for (let h = 0; h < 24; h++) {
+      times.push(`${String(h).padStart(2, '0')}:00`);
+      times.push(`${String(h).padStart(2, '0')}:30`);
+    }
+    times.forEach(time => {
+      document.getElementById("startTime").add(new Option(time, time));
+      document.getElementById("endTime").add(new Option(time, time));
+    });
+  }
+
+  function formatTime(time) {
+    const [h, m] = time.split(":");
+    return m === "30" ? `${parseInt(h)}半` : `${parseInt(h)}`;
+  }
+
+  function addSchedule() {
+    const date = document.getElementById("dateInput").value;
+    const start = document.getElementById("startTime").value;
+    const end = document.getElementById("endTime").value;
+    const emoji = document.getElementById("emojiSelect").value;
+
+    const selectedTitle = document.getElementById("titleSelect").value;
+    const customTitle = document.getElementById("customTitleInput").value.trim();
+    const title = selectedTitle === "その他" ? customTitle : selectedTitle;
+
+    const selectedLocation = document.getElementById("locationSelect").value;
+    const customLocation = document.getElementById("customLocationInput").value.trim();
+    const location = selectedLocation === "その他" ? customLocation : selectedLocation;
+
+    if (!date || !start || !end || !title || (selectedLocation === "その他" && !customLocation)) {
+      alert("すべての項目を入力してください。");
+      return;
     }
 
-    // 初期化
+    const timeStr = `${formatTime(start)}-${formatTime(end)}`;
+    const newEntry = `${timeStr}${emoji}${title}${location ? `(${location})` : ''}`;
+
+    if (!schedule[date]) schedule[date] = [];
+    if (schedule[date].includes(newEntry)) {
+      alert("同じ予定がすでに登録されています。");
+      return;
+    }
+
+    schedule[date].push(newEntry);
+    renderOutput();
+    clearInputs();
+  }
+
+  function clearInputs() {
+    document.getElementById("emojiSelect").value = "";
+    document.getElementById("locationSelect").value = "";
+    document.getElementById("customLocationInput").value = "";
+    document.getElementById("customLocationLabel").style.display = "none";
+    document.getElementById("customLocationInput").style.display = "none";
+    document.getElementById("titleSelect").value = "";
+    document.getElementById("customTitleInput").value = "";
+    document.getElementById("customTitleLabel").style.display = "none";
+    document.getElementById("customTitleInput").style.display = "none";
+  }
+
+  document.getElementById("titleSelect").addEventListener("change", function () {
+    const isOther = this.value === "その他";
+    document.getElementById("customTitleLabel").style.display = isOther ? "block" : "none";
+    document.getElementById("customTitleInput").style.display = isOther ? "block" : "none";
+  });
+
+  document.getElementById("locationSelect").addEventListener("change", function () {
+    const isOther = this.value === "その他";
+    document.getElementById("customLocationLabel").style.display = isOther ? "block" : "none";
+    document.getElementById("customLocationInput").style.display = isOther ? "block" : "none";
+  });
+
+  document.getElementById("monthSelect").addEventListener("change", () => {
+    const month = document.getElementById("monthSelect").value;
+    const dateInput = document.getElementById("dateInput");
+    const [year, monthNum] = month.split("-");
+    dateInput.min = `${year}-${monthNum}-01`;
+    const lastDay = new Date(year, monthNum, 0).getDate();
+    dateInput.max = `${year}-${monthNum}-${String(lastDay).padStart(2, "0")}`;
+    dateInput.value = `${year}-${monthNum}-01`;
+    renderOutput();
+  });
+
+  function copyOutput() {
+    const output = document.getElementById("outputArea").textContent;
+    navigator.clipboard.writeText(output).then(() => {
+      alert("出力内容をコピーしました！");
+    }).catch(err => {
+      alert("コピーに失敗しました: " + err);
+    });
+  }
+
+  // 初期化
+  window.onload = () => {
     populateTimeSelects();
-  </script>
+    fetchHolidays(); // ← APIから祝日を取得
+  };
+</script>
 
 </body>
 </html>
