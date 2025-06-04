@@ -68,6 +68,25 @@
 
 <!-- 省略: <head>とフォーム部分は前回と同じ -->
     <script>
+        // 📌 曜日を日本語で取得するための配列
+const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+
+function renderOutput() {
+  let output = "6月予定\n";
+  for (let i = 1; i <= 30; i++) {
+    const dayStr = String(i).padStart(2, '0');
+    const dateStr = `2025-06-${dayStr}`;
+    const dateObj = new Date(dateStr);
+    const weekday = weekDays[dateObj.getDay()]; // 曜日を取得
+
+    if (schedule[dayStr]) {
+      output += `${dayStr}日(${weekday})\t${schedule[dayStr].join('\n\t')}\n`;
+    } else if (isWeekendOrHoliday(dateStr)) {
+      output += `${dayStr}日(${weekday})\n`;
+    }
+  }
+  document.getElementById("outputArea").value = output.trim();
+}
         const schedule = {};
         const holidays = ["2025-06-16"];
       
@@ -147,19 +166,7 @@ document.getElementById("customTitleInput").style.display = "none";
           clearInputs();
         }
       
-        function renderOutput() {
-          let output = "6月予定\n";
-          for (let i = 1; i <= 30; i++) {
-            const dayStr = String(i).padStart(2, '0');
-            const dateStr = `2025-06-${dayStr}`;
-            if (schedule[dayStr]) {
-              output += `${dayStr}日\t${schedule[dayStr].join('\n\t')}\n`;
-            } else if (isWeekendOrHoliday(dateStr)) {
-              output += `${dayStr}日\n`;
-            }
-          }
-          document.getElementById("outputArea").value = output.trim();
-        }
+
       
         function clearInputs() {
           document.getElementById("emojiSelect").value = "";
