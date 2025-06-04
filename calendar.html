@@ -30,8 +30,9 @@
 <body>
 
 <h2>予定登録（LINE風）</h2>
-
-<label>📅 日付（6月）</label>
+<label>🗓️ 表示月</label>
+<input type="month" id="monthSelect" value="2025-06">
+<label>📅 日付</label>
 <input type="date" id="dateInput">
 
 <label>🕒 開始時間</label>
@@ -86,30 +87,43 @@
 <button onclick="copyOutput()">📋 コピー</button>
 
 <script>
+    document.getElementById("monthSelect").addEventListener("change", () => {
+  const month = document.getElementById("monthSelect").value;
+  const dateInput = document.getElementById("dateInput");
+  const [year, monthNum] = month.split("-");
+  dateInput.min = `${year}-${monthNum}-01`;
+  const lastDay = new Date(year, monthNum, 0).getDate();
+  dateInput.max = `${year}-${monthNum}-${String(lastDay).padStart(2, "0")}`;
+  // 初期値もセット
+  dateInput.value = `${year}-${monthNum}-01`;
+});
   const schedule = {};
   const holidays = ["2025-06-16"];
   const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
 
   function renderOutput() {
-    let output = "6月予定\n";
+  const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+  const month = document.getElementById("monthSelect").value;
+  const [year, m] = month.split("-");
+  const lastDay = new Date(year, m, 0).getDate();
+  let output = `${parseInt(m)}月予定\n`;
 
-    for (let i = 1; i <= 30; i++) {
-      const dayStr = String(i).padStart(2, '0');
-      const dateStr = `2025-06-${dayStr}`;
-      const dateObj = new Date(dateStr);
-      const dayOfWeek = dateObj.getDay();
-      const weekday = weekDays[dayOfWeek];
+  for (let i = 1; i <= lastDay; i++) {
+    const dayStr = String(i).padStart(2, '0');
+    const dateStr = `${month}-${dayStr}`;
+    const dateObj = new Date(dateStr);
+    const weekday = weekDays[dateObj.getDay()];
+    const plans = schedule[month]?.[dayStr];
 
-      if (schedule[dayStr]) {
-        const plans = schedule[dayStr].join('　');
-        output += `${dayStr}日(${weekday})　${plans}\n`;
-      } else if (isWeekendOrHoliday(dateStr)) {
-        output += `${dayStr}日(${weekday})\n`;
-      }
+    if (plans && plans.length > 0) {
+      output += `${dayStr}日(${weekday})　${plans.join('　')}\n`;
+    } else if (isWeekendOrHoliday(dateStr)) {
+      output += `${dayStr}日(${weekday})\n`;
     }
-
-    document.getElementById("outputArea").textContent = output.trim();
   }
+
+  document.getElementById("outputArea").textContent = output.trim();
+}
 
   function populateTimeSelects() {
     const times = [];
