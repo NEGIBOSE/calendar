@@ -88,24 +88,8 @@
 
 <script>
   const schedule = {};
+  const holidays = ["2025-06-16"];
   const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
-  let holidays = {}; // APIで取得した祝日をここに格納
-
-  async function fetchHolidays() {
-    try {
-      const res = await fetch("https://holidays-jp.github.io/api/v1/date.json");
-      holidays = await res.json();
-      renderOutput();
-    } catch (error) {
-      console.error("祝日の取得に失敗しました:", error);
-    }
-  }
-
-  function isWeekendOrHoliday(dateStr) {
-    const date = new Date(dateStr);
-    const day = date.getDay();
-    return day === 0 || day === 6 || holidays.hasOwnProperty(dateStr);
-  }
 
   function renderOutput() {
     const month = document.getElementById("monthSelect").value;
@@ -131,21 +115,37 @@
     document.getElementById("outputArea").textContent = output.trim();
   }
 
+  function isWeekendOrHoliday(dateStr) {
+    const date = new Date(dateStr);
+    const day = date.getDay();
+    return day === 0 || day === 6 || holidays.includes(dateStr);
+  }
+
+  function formatTime(time) {
+    const [h, m] = time.split(":");
+    return m === "30" ? `${parseInt(h)}半` : `${parseInt(h)}`;
+  }
+
   function populateTimeSelects() {
     const times = [];
     for (let h = 0; h < 24; h++) {
       times.push(`${String(h).padStart(2, '0')}:00`);
       times.push(`${String(h).padStart(2, '0')}:30`);
     }
+    const startSelect = document.getElementById("startTime");
     times.forEach(time => {
-      document.getElementById("startTime").add(new Option(time, time));
-      document.getElementById("endTime").add(new Option(time, time));
+      startSelect.add(new Option(time, time));
     });
-  }
 
-  function formatTime(time) {
-    const [h, m] = time.split(":");
-    return m === "30" ? `${parseInt(h)}半` : `${parseInt(h)}`;
+    // 終了時間の選択肢は動的に設定
+    startSelect.addEventListener("change", function () {
+      const selectedIndex = times.indexOf(this.value);
+      const endSelect = document.getElementById("endTime");
+      endSelect.innerHTML = "";
+      times.slice(selectedIndex + 1).forEach(time => {
+        endSelect.add(new Option(time, time));
+      });
+    });
   }
 
   function addSchedule() {
@@ -167,10 +167,15 @@
       return;
     }
 
+    if (start >= end) {
+      alert("終了時間は開始時間より後にしてください。");
+      return;
+    }
+
     const timeStr = `${formatTime(start)}-${formatTime(end)}`;
     const newEntry = `${timeStr}${emoji}${title}${location ? `(${location})` : ''}`;
-
     if (!schedule[date]) schedule[date] = [];
+
     if (schedule[date].includes(newEntry)) {
       alert("同じ予定がすでに登録されています。");
       return;
@@ -191,6 +196,8 @@
     document.getElementById("customTitleInput").value = "";
     document.getElementById("customTitleLabel").style.display = "none";
     document.getElementById("customTitleInput").style.display = "none";
+    document.getElementById("startTime").value = "";
+    document.getElementById("endTime").innerHTML = "";
   }
 
   document.getElementById("titleSelect").addEventListener("change", function () {
@@ -213,7 +220,6 @@
     const lastDay = new Date(year, monthNum, 0).getDate();
     dateInput.max = `${year}-${monthNum}-${String(lastDay).padStart(2, "0")}`;
     dateInput.value = `${year}-${monthNum}-01`;
-    renderOutput();
   });
 
   function copyOutput() {
@@ -225,11 +231,7 @@
     });
   }
 
-  // 初期化
-  window.onload = () => {
-    populateTimeSelects();
-    fetchHolidays(); // ← APIから祝日を取得
-  };
+  populateTimeSelects();
 </script>
 
 </body>
