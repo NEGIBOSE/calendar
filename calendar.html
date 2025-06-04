@@ -13,12 +13,18 @@
     label {
       display: block;
       margin-top: 10px;
+      font-weight: bold;
     }
     select, input, button {
+      display: block;
       width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-
+      padding: 10px;
+      margin-top: 2px;
+      box-sizing: border-box;
+      cursor: pointer;
+    }
+    select[size], select[multiple] {
+      overflow-y: auto;
     }
     textarea {
       width: 100%;
@@ -26,15 +32,37 @@
       margin-top: 20px;
       white-space: pre-wrap;
     }
+    .input-wrapper {
+      width: 100%;
+      position: relative;
+      border: 1px solid #ccc;
+      padding: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+    .input-wrapper input {
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 1em;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
 
 <h2>予定登録（LINE風）</h2>
-<label>🗓️ 表示月</label>
-<input type="month" id="monthSelect" value="2025-06">
-<label>📅 日付</label>
-<input type="date" id="dateInput">
+<label for="monthSelect">🗓️ 表示月</label>
+<div class="input-wrapper" onclick="document.getElementById('monthSelect').showPicker()">
+  <input type="month" id="monthSelect" value="2025-06">
+</div>
+
+<label for="dateInput">📅 日付</label>
+<div class="input-wrapper" onclick="document.getElementById('dateInput').showPicker()">
+  <input type="date" id="dateInput">
+</div>
 
 <label>🕒 開始時間</label>
 <select id="startTime" size="6" style="overflow-y: auto;"></select>
