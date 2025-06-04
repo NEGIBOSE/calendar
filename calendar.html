@@ -178,42 +178,55 @@
   }
 
   function addSchedule() {
-    const date = document.getElementById("dateInput").value;
-    const start = document.getElementById("startTime").value;
-    const end = document.getElementById("endTime").value;
-    const emoji = document.getElementById("emojiSelect").value;
+  const date = document.getElementById("dateInput").value;
+  const start = document.getElementById("startTime").value;
+  const end = document.getElementById("endTime").value;
+  const emoji = document.getElementById("emojiSelect").value;
 
-    const selectedTitle = document.getElementById("titleSelect").value;
-    const customTitle = document.getElementById("customTitleInput").value.trim();
-    const title = selectedTitle === "その他" ? customTitle : selectedTitle;
+  const selectedTitle = document.getElementById("titleSelect").value;
+  const customTitle = document.getElementById("customTitleInput").value.trim();
+  const title = selectedTitle === "その他" ? customTitle : selectedTitle;
 
-    const selectedLocation = document.getElementById("locationSelect").value;
-    const customLocation = document.getElementById("customLocationInput").value.trim();
-    const location = selectedLocation === "その他" ? customLocation : selectedLocation;
+  const selectedLocation = document.getElementById("locationSelect").value;
+  const customLocation = document.getElementById("customLocationInput").value.trim();
+  const location = selectedLocation === "その他" ? customLocation : selectedLocation;
 
-    if (!date || !start || !end || !title || (selectedLocation === "その他" && !customLocation)) {
-      alert("すべての項目を入力してください。");
-      return;
-    }
-
-    if (start >= end) {
-      alert("終了時間は開始時間より後にしてください。");
-      return;
-    }
-
-    const timeStr = `${formatTime(start)}-${formatTime(end)}`;
-    const newEntry = `${timeStr}${emoji}${title}${location ? `(${location})` : ''}`;
-    if (!schedule[date]) schedule[date] = [];
-
-    if (schedule[date].includes(newEntry)) {
-      alert("同じ予定がすでに登録されています。");
-      return;
-    }
-
-    schedule[date].push(newEntry);
-    renderOutput();
-    clearInputs();
+  if (!date || !start || !end || !title || (selectedLocation === "その他" && !customLocation)) {
+    alert("すべての項目を入力してください。");
+    return;
   }
+
+  if (start >= end) {
+    alert("終了時間は開始時間より後にしてください。");
+    return;
+  }
+
+  const timeStr = `${formatTime(start)}-${formatTime(end)}`;
+  const newEntry = `${timeStr}${emoji}${title}${location ? `(${location})` : ''}`;
+  if (!schedule[date]) schedule[date] = [];
+
+  if (schedule[date].includes(newEntry)) {
+    alert("同じ予定がすでに登録されています。");
+    return;
+  }
+
+  schedule[date].push(newEntry);
+
+  // 🔽 開始時間順に並び替える
+  schedule[date].sort((a, b) => {
+    const getStartTime = s => {
+      const match = s.match(/^(\d+)(半)?-/);
+      if (!match) return 0;
+      const hour = parseInt(match[1]);
+      const half = match[2] ? 0.5 : 0;
+      return hour + half;
+    };
+    return getStartTime(a) - getStartTime(b);
+  });
+
+  renderOutput();
+  clearInputs();
+}
 
   function clearInputs() {
     document.getElementById("emojiSelect").value = "";
