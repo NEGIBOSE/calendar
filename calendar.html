@@ -56,7 +56,7 @@
 <h2>予定登録（LINE風）</h2>
 <label for="monthSelect">🗓️ 表示月</label>
 <div class="input-wrapper" onclick="document.getElementById('monthSelect').showPicker()">
-  <input type="month" id="monthSelect" value="2025-06">
+  <input type="month" id="monthSelect">
 </div>
 
 <label for="dateInput">📅 日付</label>
@@ -65,10 +65,10 @@
 </div>
 
 <label>🕒 開始時間</label>
-<select id="startTime" size="6" style="overflow-y: auto;"></select>
+<select id="startTime" size="6"></select>
 
 <label>🕒 終了時間</label>
-<select id="endTime" size="6" style="overflow-y: auto;"></select>
+<select id="endTime" size="6"></select>
 
 <label>✏️ 予定内容</label>
 <select id="titleSelect">
@@ -120,6 +120,32 @@
   const holidays = ["2025-06-16"];
   const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
 
+  window.onload = function () {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0-based
+  const date = today.getDate();
+
+  // 表示月（1〜15日 → 当月, 16日以降 → 翌月）
+  const targetDate = date <= 15 ? new Date(year, month, 1) : new Date(year, month + 1, 1);
+
+  const displayYear = targetDate.getFullYear();
+  const displayMonth = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const displayMonthStr = `${displayYear}-${displayMonth}`;
+
+  const monthSelect = document.getElementById("monthSelect");
+  const dateInput = document.getElementById("dateInput");
+
+  monthSelect.value = displayMonthStr;
+
+  const lastDay = new Date(displayYear, targetDate.getMonth() + 1, 0).getDate();
+  dateInput.min = `${displayYear}-${displayMonth}-01`;
+  dateInput.max = `${displayYear}-${displayMonth}-${String(lastDay).padStart(2, '0')}`;
+  dateInput.value = `${displayYear}-${displayMonth}-01`;
+
+  renderOutput();
+};
+
   function renderOutput() {
     const month = document.getElementById("monthSelect").value;
     const [year, mRaw] = month.split("-");
@@ -166,7 +192,6 @@
       startSelect.add(new Option(time, time));
     });
 
-    // 終了時間の選択肢は動的に設定
     startSelect.addEventListener("change", function () {
       const selectedIndex = times.indexOf(this.value);
       const endSelect = document.getElementById("endTime");
@@ -178,55 +203,53 @@
   }
 
   function addSchedule() {
-  const date = document.getElementById("dateInput").value;
-  const start = document.getElementById("startTime").value;
-  const end = document.getElementById("endTime").value;
-  const emoji = document.getElementById("emojiSelect").value;
+    const date = document.getElementById("dateInput").value;
+    const start = document.getElementById("startTime").value;
+    const end = document.getElementById("endTime").value;
+    const emoji = document.getElementById("emojiSelect").value;
 
-  const selectedTitle = document.getElementById("titleSelect").value;
-  const customTitle = document.getElementById("customTitleInput").value.trim();
-  const title = selectedTitle === "その他" ? customTitle : selectedTitle;
+    const selectedTitle = document.getElementById("titleSelect").value;
+    const customTitle = document.getElementById("customTitleInput").value.trim();
+    const title = selectedTitle === "その他" ? customTitle : selectedTitle;
 
-  const selectedLocation = document.getElementById("locationSelect").value;
-  const customLocation = document.getElementById("customLocationInput").value.trim();
-  const location = selectedLocation === "その他" ? customLocation : selectedLocation;
+    const selectedLocation = document.getElementById("locationSelect").value;
+    const customLocation = document.getElementById("customLocationInput").value.trim();
+    const location = selectedLocation === "その他" ? customLocation : selectedLocation;
 
-  if (!date || !start || !end || !title || (selectedLocation === "その他" && !customLocation)) {
-    alert("すべての項目を入力してください。");
-    return;
+    if (!date || !start || !end || !title || (selectedLocation === "その他" && !customLocation)) {
+      alert("すべての項目を入力してください。");
+      return;
+    }
+
+    if (start >= end) {
+      alert("終了時間は開始時間より後にしてください。");
+      return;
+    }
+
+    const timeStr = `${formatTime(start)}-${formatTime(end)}`;
+    const newEntry = `${timeStr}${emoji}${title}${location ? `(${location})` : ''}`;
+    if (!schedule[date]) schedule[date] = [];
+
+    if (schedule[date].includes(newEntry)) {
+      alert("同じ予定がすでに登録されています。");
+      return;
+    }
+
+    schedule[date].push(newEntry);
+    schedule[date].sort((a, b) => {
+      const getStartTime = s => {
+        const match = s.match(/^(\d+)(半)?-/);
+        if (!match) return 0;
+        const hour = parseInt(match[1]);
+        const half = match[2] ? 0.5 : 0;
+        return hour + half;
+      };
+      return getStartTime(a) - getStartTime(b);
+    });
+
+    renderOutput();
+    clearInputs();
   }
-
-  if (start >= end) {
-    alert("終了時間は開始時間より後にしてください。");
-    return;
-  }
-
-  const timeStr = `${formatTime(start)}-${formatTime(end)}`;
-  const newEntry = `${timeStr}${emoji}${title}${location ? `(${location})` : ''}`;
-  if (!schedule[date]) schedule[date] = [];
-
-  if (schedule[date].includes(newEntry)) {
-    alert("同じ予定がすでに登録されています。");
-    return;
-  }
-
-  schedule[date].push(newEntry);
-
-  // 🔽 開始時間順に並び替える
-  schedule[date].sort((a, b) => {
-    const getStartTime = s => {
-      const match = s.match(/^(\d+)(半)?-/);
-      if (!match) return 0;
-      const hour = parseInt(match[1]);
-      const half = match[2] ? 0.5 : 0;
-      return hour + half;
-    };
-    return getStartTime(a) - getStartTime(b);
-  });
-
-  renderOutput();
-  clearInputs();
-}
 
   function clearInputs() {
     document.getElementById("emojiSelect").value = "";
@@ -256,12 +279,13 @@
 
   document.getElementById("monthSelect").addEventListener("change", () => {
     const month = document.getElementById("monthSelect").value;
-    const dateInput = document.getElementById("dateInput");
     const [year, monthNum] = month.split("-");
+    const dateInput = document.getElementById("dateInput");
     dateInput.min = `${year}-${monthNum}-01`;
     const lastDay = new Date(year, monthNum, 0).getDate();
     dateInput.max = `${year}-${monthNum}-${String(lastDay).padStart(2, "0")}`;
     dateInput.value = `${year}-${monthNum}-01`;
+    renderOutput();
   });
 
   function copyOutput() {
