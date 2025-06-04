@@ -2,20 +2,19 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>予定管理チャット風ツール</title>
+  <title>予定管理ツール</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
     label { display: block; margin-top: 10px; }
     select, input, button { width: 100%; padding: 8px; margin-top: 5px; }
     textarea { width: 100%; height: 300px; margin-top: 20px; white-space: pre-wrap; }
-    .emoji { font-size: 1.2em; }
   </style>
 </head>
 <body>
 
 <h2>予定登録（LINE風）</h2>
 
-<label>📅 日付（6月のみ想定）</label>
+<label>📅 日付（6月）</label>
 <input type="date" id="dateInput">
 
 <label>🕒 開始時間</label>
@@ -24,90 +23,151 @@
 <label>🕒 終了時間</label>
 <select id="endTime"></select>
 
-<label>✏️ 予定タイトル</label>
-<input type="text" id="titleInput" placeholder="例：中PM研修">
-
-<label>📍 場所や補足</label>
-<input type="text" id="locationInput" placeholder="例：VB">
-
-<label>🎉 絵文字</label>
-<select id="emojiSelect">
-  <option value="">なし</option>
-  <option value="💍">💍</option>
-  <option value="🐈‍⬛">🐈‍⬛</option>
-  <option value="🎬">🎬</option>
-  <option value="🍖">🍖</option>
+<label>✏️ 予定内容</label>
+<select id="titleSelect">
+  <option value="">選択なし</option>
+  <option value="中PM研修">中PM研修</option>
+  <option value="秋田旅行">秋田旅行</option>
+  <option value="帰社日">帰社日</option>
+  <option value="スティッチ">スティッチ</option>
+  <option value="プレコンゼミ">プレコンゼミ</option>
+  <option value="着付け">着付け</option>
+  <option value="肉の日">肉の日</option>
+  <option value="その他">その他</option>
 </select>
 
-<button onclick="addSchedule()">＋ 予定を登録</button>
+<label id="customTitleLabel" style="display:none">✏️ その他の予定</label>
+<input type="text" id="customTitleInput" placeholder="例：出張（大阪）" style="display:none">
 
-<h3>📤 出力結果（コピーしてLINEなどへ）</h3>
+<label>📍 場所</label>
+<label id="customLocationLabel" style="display:none">✏️ その他の場所</label>
+<input type="text" id="customLocationInput" placeholder="例：新宿駅" style="display:none">
+<select id="locationSelect">
+  <option value="">選択なし</option>
+  <option value="池袋">池袋</option>
+  <option value="VB">VB</option>
+  <option value="羽田空港">羽田空港</option>
+  <option value="秋田空港">秋田空港</option>
+  <option value="映画館">映画館</option>
+  <option value="自宅">自宅</option>
+  <option value="その他">その他</option>
+</select>
+
+<label>👥 絵文字（人物）</label>
+<select id="emojiSelect">
+  <option value="">なし</option>
+  <option value="💍">💍 2人</option>
+  <option value="🐕">🐕 りょうたん</option>
+  <option value="🐈‍⬛">🐈‍⬛ やねたん</option>
+</select>
+
+<button onclick="addSchedule()">＋ 登録</button>
+
+<h3>📤 出力（LINEコピペ用）</h3>
 <textarea id="outputArea" readonly>6月予定</textarea>
 
-<script>
-  const schedule = {};
-
-  // 15分刻みの時間を生成
-  function populateTimeSelects() {
-    const start = document.getElementById("startTime");
-    const end = document.getElementById("endTime");
-
-    for (let h = 0; h < 24; h++) {
-      for (let m = 0; m < 60; m += 30) {
-        const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-        const option1 = new Option(time, time);
-        const option2 = new Option(time, time);
-        start.add(option1.cloneNode(true));
-        end.add(option2.cloneNode(true));
-      }
-    }
-  }
-
-  populateTimeSelects();
-
-  function addSchedule() {
-    const date = document.getElementById("dateInput").value;
-    const start = document.getElementById("startTime").value;
-    const end = document.getElementById("endTime").value;
-    const title = document.getElementById("titleInput").value;
-    const location = document.getElementById("locationInput").value;
-    const emoji = document.getElementById("emojiSelect").value;
-
-    if (!date || !start || !end || !title) {
-      alert("すべての項目を入力してください。");
-      return;
-    }
-
-    const day = new Date(date).getDate().toString().padStart(2, '0');
-    const line = `${start}-${end}${emoji}${title}${location ? '(' + location + ')' : ''}`;
-
-    if (!schedule[day]) schedule[day] = [];
-    schedule[day].push(line);
-
-    renderOutput();
-    clearInputs();
-  }
-
-  function renderOutput() {
-    let output = "6月予定\n";
-    for (let i = 1; i <= 30; i++) {
-      const dayStr = String(i).padStart(2, '0');
-      output += dayStr + '日';
-      if (schedule[dayStr]) {
-        output += '\t' + schedule[dayStr].join('\n\t') + '\n';
-      } else {
-        output += '\n';
-      }
-    }
-    document.getElementById("outputArea").value = output.trim();
-  }
-
-  function clearInputs() {
-    document.getElementById("titleInput").value = "";
-    document.getElementById("locationInput").value = "";
-    document.getElementById("emojiSelect").value = "";
-  }
-</script>
-
+<!-- 省略: <head>とフォーム部分は前回と同じ -->
+    <script>
+        const schedule = {};
+        const holidays = ["2025-06-16"];
+      
+        function populateTimeSelects() {
+          const times = [];
+          for (let h = 0; h < 24; h++) {
+            times.push(`${String(h).padStart(2, '0')}:00`);
+            times.push(`${String(h).padStart(2, '0')}:30`);
+          }
+          times.forEach(time => {
+            const opt1 = new Option(time, time);
+            const opt2 = new Option(time, time);
+            document.getElementById("startTime").add(opt1);
+            document.getElementById("endTime").add(opt2);
+          });
+        }
+      
+        populateTimeSelects();
+      
+        function formatTime(time) {
+          const [h, m] = time.split(":");
+          return m === "30" ? `${parseInt(h)}半` : `${parseInt(h)}`;
+        }
+      
+        function isWeekendOrHoliday(dateStr) {
+          const date = new Date(dateStr);
+          const day = date.getDay();
+          const isHoliday = holidays.includes(dateStr);
+          return day === 0 || day === 6 || isHoliday;
+        }
+        document.getElementById("titleSelect").addEventListener("change", function () {
+  const isOther = this.value === "その他";
+  document.getElementById("customTitleLabel").style.display = isOther ? "block" : "none";
+  document.getElementById("customTitleInput").style.display = isOther ? "block" : "none";
+});
+        // その他の場所入力欄の切り替え
+        document.getElementById("locationSelect").addEventListener("change", function () {
+          const isOther = this.value === "その他";
+          document.getElementById("customLocationLabel").style.display = isOther ? "block" : "none";
+          document.getElementById("customLocationInput").style.display = isOther ? "block" : "none";
+        });
+      
+        function addSchedule() {
+          const date = document.getElementById("dateInput").value;
+          const start = document.getElementById("startTime").value;
+          const end = document.getElementById("endTime").value;
+          const emoji = document.getElementById("emojiSelect").value;
+          const selectedTitle = document.getElementById("titleSelect").value;
+const customTitle = document.getElementById("customTitleInput").value.trim();
+const title = selectedTitle === "その他" ? customTitle : selectedTitle;
+          const selectedLocation = document.getElementById("locationSelect").value;
+          const customLocation = document.getElementById("customLocationInput").value.trim();
+          const location = selectedLocation === "その他" ? customLocation : selectedLocation;
+          document.getElementById("titleSelect").value = "";
+document.getElementById("customTitleInput").value = "";
+document.getElementById("customTitleLabel").style.display = "none";
+document.getElementById("customTitleInput").style.display = "none";
+          if (!date || !start || !end || !title || (selectedLocation === "その他" && !customLocation)) {
+            alert("すべての項目を入力してください。");
+            return;
+          }
+      
+          const day = new Date(date).getDate().toString().padStart(2, '0');
+          const timeStr = `${formatTime(start)}-${formatTime(end)}`;
+          const newEntry = `${timeStr}${emoji}${title}${location ? `(${location})` : ''}`;
+      
+          // 重複チェック
+          if (schedule[day] && schedule[day].includes(newEntry)) {
+            alert("同じ予定がすでに登録されています。");
+            return;
+          }
+      
+          if (!schedule[day]) schedule[day] = [];
+          schedule[day].push(newEntry);
+      
+          renderOutput();
+          clearInputs();
+        }
+      
+        function renderOutput() {
+          let output = "6月予定\n";
+          for (let i = 1; i <= 30; i++) {
+            const dayStr = String(i).padStart(2, '0');
+            const dateStr = `2025-06-${dayStr}`;
+            if (schedule[dayStr]) {
+              output += `${dayStr}日\t${schedule[dayStr].join('\n\t')}\n`;
+            } else if (isWeekendOrHoliday(dateStr)) {
+              output += `${dayStr}日\n`;
+            }
+          }
+          document.getElementById("outputArea").value = output.trim();
+        }
+      
+        function clearInputs() {
+          document.getElementById("emojiSelect").value = "";
+          document.getElementById("locationSelect").value = "";
+          document.getElementById("customLocationInput").value = "";
+          document.getElementById("customLocationLabel").style.display = "none";
+          document.getElementById("customLocationInput").style.display = "none";
+        }
+      </script>
 </body>
 </html>
