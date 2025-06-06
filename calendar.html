@@ -250,18 +250,18 @@
   }
 
   function clearInputs() {
-  document.getElementById("emojiSelect").value = "";
-  document.getElementById("locationSelect").value = "";
-  document.getElementById("customLocationInput").value = "";
-  document.getElementById("customLocationLabel").style.display = "none";
-  document.getElementById("customLocationInput").style.display = "none";
-  document.getElementById("titleSelect").value = "";
-  document.getElementById("customTitleInput").value = "";
-  document.getElementById("customTitleLabel").style.display = "none";
-  document.getElementById("customTitleInput").style.display = "none";
-  document.getElementById("startTime").selectedIndex = 0;
-  document.getElementById("endTime").innerHTML = "";
-}
+    document.getElementById("emojiSelect").value = "";
+    document.getElementById("locationSelect").value = "";
+    document.getElementById("customLocationInput").value = "";
+    document.getElementById("customLocationLabel").style.display = "none";
+    document.getElementById("customLocationInput").style.display = "none";
+    document.getElementById("titleSelect").value = "";
+    document.getElementById("customTitleInput").value = "";
+    document.getElementById("customTitleLabel").style.display = "none";
+    document.getElementById("customTitleInput").style.display = "none";
+    document.getElementById("startTime").selectedIndex = 0;
+    document.getElementById("endTime").innerHTML = "";
+  }
 
   function copyOutput() {
     const outputText = document.getElementById("outputArea").textContent;
@@ -274,20 +274,6 @@
     renderOutput({ hidePast: true });
   }
 
-  // カスタムタイトル/場所表示切替
-  document.getElementById("titleSelect").addEventListener("change", function () {
-    const isOther = this.value === "その他";
-    document.getElementById("customTitleLabel").style.display = isOther ? "block" : "none";
-    document.getElementById("customTitleInput").style.display = isOther ? "block" : "none";
-  });
-
-  document.getElementById("locationSelect").addEventListener("change", function () {
-    const isOther = this.value === "その他";
-    document.getElementById("customLocationLabel").style.display = isOther ? "block" : "none";
-    document.getElementById("customLocationInput").style.display = isOther ? "block" : "none";
-  });
-
-  // 月初期値の自動設定
   function setDefaultMonth() {
     const today = new Date();
     const year = today.getFullYear();
@@ -300,9 +286,33 @@
     document.getElementById("monthSelect").value = formatted;
   }
 
-  // 初期化
+  function syncDateInputWithMonth() {
+    const monthValue = document.getElementById("monthSelect").value;
+    if (monthValue) {
+      document.getElementById("dateInput").value = `${monthValue}-01`;
+    }
+  }
+
+  document.getElementById("monthSelect").addEventListener("change", () => {
+    syncDateInputWithMonth();
+    renderOutput();
+  });
+
+  document.getElementById("titleSelect").addEventListener("change", function () {
+    const isOther = this.value === "その他";
+    document.getElementById("customTitleLabel").style.display = isOther ? "block" : "none";
+    document.getElementById("customTitleInput").style.display = isOther ? "block" : "none";
+  });
+
+  document.getElementById("locationSelect").addEventListener("change", function () {
+    const isOther = this.value === "その他";
+    document.getElementById("customLocationLabel").style.display = isOther ? "block" : "none";
+    document.getElementById("customLocationInput").style.display = isOther ? "block" : "none";
+  });
+
   window.onload = () => {
     setDefaultMonth();
+    syncDateInputWithMonth();
     populateTimeSelects();
     renderOutput();
   };
