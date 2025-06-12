@@ -316,9 +316,14 @@
             schedule[item.date].push(item.entry);
           }
         });
-        // 日付ごとに時刻順ソート
+        // 日付ごとに時刻順ソート（時間未定"HH:MM"は先頭）
         Object.keys(schedule).forEach(date => {
           schedule[date].sort((a, b) => {
+            // "HH:MM"は先頭
+            if (a.startsWith("HH:MM") && !b.startsWith("HH:MM")) return -1;
+            if (!a.startsWith("HH:MM") && b.startsWith("HH:MM")) return 1;
+            if (a.startsWith("HH:MM") && b.startsWith("HH:MM")) return 0;
+            // 通常の時間ソート
             const getStart = (s) => {
               const match = s.match(/^(\d+)(半)?-/);
               if (!match) return 99;
