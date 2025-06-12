@@ -167,7 +167,10 @@
       <option value="🐈‍⬛">🐈‍⬛ やねたん</option>
     </select>
 
-    <button onclick="addSchedule()">＋ 登録</button>
+    <button onclick="addTempSchedule()">＋ 登録</button>
+
+    <div id="tempListArea"></div>
+    <button id="confirmBtn" onclick="confirmSchedules()" style="display:none;">✅ 確定して出力</button>
 
     <h3>📤 出力（LINEコピペ用）</h3>
     <div id="outputArea"></div>
@@ -177,6 +180,7 @@
 
     <script>
       const schedule = {};
+      const tempList = []; // 一時リスト
       const holidays = ["2025-06-16"];
       const weekDays = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -241,54 +245,93 @@
         });
       }
 
-function addSchedule() {
-  const date = document.getElementById("dateInput").value;
-  const start = document.getElementById("startTime").value;
-  const end = document.getElementById("endTime").value;
-  const emoji = document.getElementById("emojiSelect").value;
+      // 一時リスト描画
+      function renderTempList() {
+        const area = document.getElementById("tempListArea");
+        area.innerHTML = "";
+        if (tempList.length === 0) {
+          document.getElementById("confirmBtn").style.display = "none";
+          return;
+        }
+        document.getElementById("confirmBtn").style.display = "block";
+        tempList.forEach((item, idx) => {
+          const div = document.createElement("div");
+          div.className = "schedule-item";
+          div.innerHTML = `<span>${item.display}</span>
+            <button onclick="removeTempSchedule(${idx})">削除</button>`;
+          area.appendChild(div);
+        });
+      }
 
-  const selectedTitle = document.getElementById("titleSelect").value;
-  const customTitle = document.getElementById("customTitleInput").value.trim();
-  const title = selectedTitle === "その他" ? customTitle : selectedTitle;
+      // 予定を一時リストに追加
+      function addTempSchedule() {
+        const date = document.getElementById("dateInput").value;
+        const start = document.getElementById("startTime").value;
+        const end = document.getElementById("endTime").value;
+        const emoji = document.getElementById("emojiSelect").value;
 
-  const selectedLocation = document.getElementById("locationSelect").value;
-  const customLocation = document.getElementById("customLocationInput").value.trim();
-  const location = selectedLocation === "その他" ? customLocation : selectedLocation;
+        const selectedTitle = document.getElementById("titleSelect").value;
+        const customTitle = document.getElementById("customTitleInput").value.trim();
+        const title = selectedTitle === "その他" ? customTitle : selectedTitle;
 
-  if (!date || !title || (selectedLocation === "その他" && !customLocation)) {
-    alert("日付、タイトル、場所は必須です。");
-    return;
-  }
+        const selectedLocation = document.getElementById("locationSelect").value;
+        const customLocation = document.getElementById("customLocationInput").value.trim();
+        const location = selectedLocation === "その他" ? customLocation : selectedLocation;
 
-  if (start && end && start >= end) {
-    alert("終了時間は開始時間より後にしてください。");
-    return;
-  }
+        if (!date || !title || (selectedLocation === "その他" && !customLocation)) {
+          alert("日付、タイトル、場所は必須です。");
+          return;
+        }
+        if (start && end && start >= end) {
+          alert("終了時間は開始時間より後にしてください。");
+          return;
+        }
+        const timeStr = start && end ? `${formatTime(start)}-${formatTime(end)}` : "HH:MM";
+        const display = `${date} ${timeStr}${emoji}${title}${location ? `(${location})` : ""}`;
 
-  const timeStr =
-    start && end ? `${formatTime(start)}-${formatTime(end)}` : "HH:MM";
+        // 重複チェック
+        if (tempList.some(e => e.display === display)) {
+          alert("同じ予定が一時リストにあります。");
+          return;
+        }
+        tempList.push({
+          date,
+          entry: `${timeStr}${emoji}${title}${location ? `(${location})` : ""}`,
+          display
+        });
+        renderTempList();
+        clearInputs();
+      }
 
-  const newEntry = `${timeStr}${emoji}${title}${location ? `(${location})` : ""}`;
-  if (!schedule[date]) schedule[date] = [];
+      // 一時リストから削除
+      function removeTempSchedule(idx) {
+        tempList.splice(idx, 1);
+        renderTempList();
+      }
 
-  if (schedule[date].includes(newEntry)) {
-    alert("同じ予定がすでに登録されています。");
-    return;
-  }
-
-  schedule[date].push(newEntry);
-  schedule[date].sort((a, b) => {
-    const getStart = (s) => {
-      const match = s.match(/^(\d+)(半)?-/);
-      if (!match) return 99; // 時間未定のものを後ろにする
-      return parseInt(match[1]) + (match[2] ? 0.5 : 0);
-    };
-    return getStart(a) - getStart(b);
-  });
-
-  renderOutput();
-  clearInputs();
-}
+      // 一時リストをscheduleに反映し、出力
+      function confirmSchedules() {
+        tempList.forEach(item => {
+          if (!schedule[item.date]) schedule[item.date] = [];
+          if (!schedule[item.date].includes(item.entry)) {
+            schedule[item.date].push(item.entry);
+          }
+        });
+        // 日付ごとに時刻順ソート
+        Object.keys(schedule).forEach(date => {
+          schedule[date].sort((a, b) => {
+            const getStart = (s) => {
+              const match = s.match(/^(\d+)(半)?-/);
+              if (!match) return 99;
+              return parseInt(match[1]) + (match[2] ? 0.5 : 0);
+            };
+            return getStart(a) - getStart(b);
+          });
+        });
+        tempList.length = 0;
+        renderTempList();
+        renderOutput();
+      }
 
       function deleteSelectedEntry() {
         const date = document.getElementById("dateInput").value;
