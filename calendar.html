@@ -176,7 +176,6 @@
     <div id="outputArea"></div>
     <button onclick="copyOutput()">📋 コピー</button>
     <button onclick="deletePastEntries()">🗑️ 過去の予定を削除</button>
-    <button onclick="deleteSelectedEntry()">❌ 選択した予定を削除</button>
 
     <script>
       const schedule = {};
@@ -331,60 +330,6 @@
         tempList.length = 0;
         renderTempList();
         renderOutput();
-      }
-
-      function deleteSelectedEntry() {
-        const date = document.getElementById("dateInput").value;
-        const start = document.getElementById("startTime").value;
-        const end = document.getElementById("endTime").value;
-        const emoji = document.getElementById("emojiSelect").value;
-
-        const selectedTitle = document.getElementById("titleSelect").value;
-        const customTitle = document
-          .getElementById("customTitleInput")
-          .value.trim();
-        const title = selectedTitle === "その他" ? customTitle : selectedTitle;
-
-        const selectedLocation =
-          document.getElementById("locationSelect").value;
-        const customLocation = document
-          .getElementById("customLocationInput")
-          .value.trim();
-        const location =
-          selectedLocation === "その他" ? customLocation : selectedLocation;
-
-        if (
-          !date ||
-          !start ||
-          !end ||
-          !title ||
-          (selectedLocation === "その他" && !customLocation)
-        ) {
-          alert("すべての項目を入力してください。");
-          return;
-        }
-
-        const timeStr = `${formatTime(start)}-${formatTime(end)}`;
-        const targetEntry = `${timeStr}${emoji}${title}${
-          location ? `(${location})` : ""
-        }`;
-
-        if (!schedule[date]) {
-          alert("この日付には予定がありません。");
-          return;
-        }
-
-        const index = schedule[date].indexOf(targetEntry);
-        if (index !== -1) {
-          schedule[date].splice(index, 1);
-          if (schedule[date].length === 0) {
-            delete schedule[date];
-          }
-          renderOutput();
-          alert("予定を削除しました。");
-        } else {
-          alert("一致する予定が見つかりませんでした。");
-        }
       }
 
       function clearInputs() {
