@@ -77,14 +77,19 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 10px; /* 追加: テキストとボタンの間隔 */
       }
       .schedule-item span {
         flex: 1;
+        white-space: pre-wrap; /* 追加: テキスト折り返し */
+        padding-right: 8px;    /* 追加: ボタンとの余白 */
+        word-break: break-all; /* 追加: 長い単語も折り返す */
       }
       .schedule-item button {
         flex-shrink: 0;
-        margin-left: 10px;
-        padding: 4px 8px;
+        width: auto;           /* 変更: 横幅自動 */
+        min-width: 60px;       /* 追加: 最小幅 */
+        padding: 4px 12px;     /* 変更: 横幅を抑える */
       }
     </style>
   </head>
