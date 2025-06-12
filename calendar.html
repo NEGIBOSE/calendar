@@ -285,7 +285,7 @@
           alert("終了時間は開始時間より後にしてください。");
           return;
         }
-        const timeStr = start && end ? `${formatTime(start)}-${formatTime(end)}` : "HH:MM";
+        const timeStr = start && end ? `${formatTime(start)}-${formatTime(end)}` : "h:m";
         const display = `${date} ${timeStr}${emoji}${title}${location ? `(${location})` : ""}`;
 
         // 重複チェック
