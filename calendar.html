@@ -4,17 +4,20 @@
     <meta charset="UTF-8" />
     <title>予定管理ツール</title>
     <style>
+      /* レイアウト全体 */
       body {
         font-family: sans-serif;
         padding: 20px;
         max-width: 600px;
         margin: auto;
       }
+      /* ラベル */
       label {
         display: block;
         margin-top: 10px;
         font-weight: bold;
       }
+      /* 入力系共通 */
       select,
       input,
       button {
@@ -34,6 +37,7 @@
         margin-top: 20px;
         white-space: pre-wrap;
       }
+      /* 入力ラッパー */
       .input-wrapper {
         width: 100%;
         position: relative;
@@ -42,6 +46,7 @@
         border-radius: 4px;
         cursor: pointer;
         margin-top: 5px;
+        box-sizing: border-box; /* 追加: 幅計算をborder込みに */
       }
       .input-wrapper input {
         width: 100%;
@@ -49,8 +54,9 @@
         outline: none;
         background: transparent;
         font-size: 1em;
-        pointer-events: none;
+        /* pointer-events: none; を削除 */
       }
+      /* 時間選択行 */
       .time-row {
         display: flex;
         gap: 10px;
@@ -59,6 +65,7 @@
         flex: 1;
         height: 120px;
       }
+      /* 出力エリア */
       #outputArea {
         white-space: pre-wrap;
         border: 1px solid #ccc;
@@ -68,7 +75,9 @@
         background: #fdfdfd;
         margin-top: 10px;
       }
-      #scheduleList {
+      /* 一時リスト・予定リスト */
+      #scheduleList,
+      #tempListArea {
         margin-top: 20px;
       }
       .schedule-item {
@@ -77,36 +86,38 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 10px;
       }
       .schedule-item span {
         flex: 1;
+        white-space: pre-wrap;
+        padding-right: 8px;
+        word-break: break-all;
       }
       .schedule-item button {
         flex-shrink: 0;
-        margin-left: 10px;
-        padding: 4px 8px;
+        width: auto;
+        min-width: 60px;
+        padding: 4px 12px;
       }
     </style>
   </head>
   <body>
     <h2>予定登録（LINE風）</h2>
 
+    <!-- 月選択 -->
     <label for="monthSelect">🗓️ 表示月</label>
-    <div
-      class="input-wrapper"
-      onclick="document.getElementById('monthSelect').showPicker()"
-    >
+    <div class="input-wrapper" onclick="document.getElementById('monthSelect').showPicker()">
       <input type="month" id="monthSelect" />
     </div>
 
+    <!-- 日付選択 -->
     <label for="dateInput">📅 日付</label>
-    <div
-      class="input-wrapper"
-      onclick="document.getElementById('dateInput').showPicker()"
-    >
+    <div class="input-wrapper" onclick="document.getElementById('dateInput').showPicker()">
       <input type="date" id="dateInput" />
     </div>
 
+    <!-- 時間選択 -->
     <div class="time-row">
       <div style="flex: 1">
         <label>🕒 開始時間</label>
@@ -118,6 +129,7 @@
       </div>
     </div>
 
+    <!-- 予定内容 -->
     <label>✏️ 予定内容</label>
     <select id="titleSelect">
       <option value="">選択なし</option>
@@ -131,13 +143,9 @@
       <option value="その他">その他</option>
     </select>
     <label id="customTitleLabel" style="display: none">✏️ その他の予定</label>
-    <input
-      type="text"
-      id="customTitleInput"
-      placeholder="例：出張（大阪）"
-      style="display: none"
-    />
+    <input type="text" id="customTitleInput" placeholder="例：出張（大阪）" style="display: none" />
 
+    <!-- 場所 -->
     <label>📍 場所</label>
     <select id="locationSelect">
       <option value="">選択なし</option>
@@ -149,16 +157,10 @@
       <option value="自宅">自宅</option>
       <option value="その他">その他</option>
     </select>
-    <label id="customLocationLabel" style="display: none"
-      >✏️ その他の場所</label
-    >
-    <input
-      type="text"
-      id="customLocationInput"
-      placeholder="例：新宿駅"
-      style="display: none"
-    />
+    <label id="customLocationLabel" style="display: none">✏️ その他の場所</label>
+    <input type="text" id="customLocationInput" placeholder="例：新宿駅" style="display: none" />
 
+    <!-- 絵文字 -->
     <label>👥 絵文字（人物）</label>
     <select id="emojiSelect">
       <option value="">なし</option>
@@ -167,20 +169,27 @@
       <option value="🐈‍⬛">🐈‍⬛ やねたん</option>
     </select>
 
-    <button onclick="addSchedule()">＋ 登録</button>
+    <!-- 追加・一時リスト・確定 -->
+    <button onclick="addTempSchedule()">＋ 登録</button>
+    <div id="tempListArea"></div>
+    <button id="confirmBtn" onclick="confirmSchedules()" style="display:none;">✅ 確定して出力</button>
 
+    <!-- 出力 -->
     <h3>📤 出力（LINEコピペ用）</h3>
     <div id="outputArea"></div>
     <button onclick="copyOutput()">📋 コピー</button>
     <button onclick="deletePastEntries()">🗑️ 過去の予定を削除</button>
-    <button onclick="deleteSelectedEntry()">❌ 選択した予定を削除</button>
 
     <script>
+      // --- 定数・データ ---
       const schedule = {};
+      const tempList = [];
       const holidays = ["2025-06-16"];
       const weekDays = ["日", "月", "火", "水", "木", "金", "土"];
 
+      // --- ユーティリティ ---
       function formatTime(time) {
+        if (!time) return "";
         const [h, m] = time.split(":");
         return m === "30" ? `${parseInt(h)}半` : `${parseInt(h)}`;
       }
@@ -191,8 +200,147 @@
         return day === 0 || day === 6 || holidays.includes(dateStr);
       }
 
+      // --- 時間選択肢生成 ---
+      function populateTimeSelects() {
+        const times = [];
+        for (let h = 0; h < 24; h++) {
+          times.push(`${String(h).padStart(2, "0")}:00`);
+          times.push(`${String(h).padStart(2, "0")}:30`);
+        }
+        const startSelect = document.getElementById("startTime");
+        startSelect.innerHTML = "";
+        times.forEach((time) => {
+          startSelect.add(new Option(time, time));
+        });
+
+        startSelect.addEventListener("change", function () {
+          updateEndTimeOptions(times, this.value);
+        });
+      }
+
+      function updateEndTimeOptions(times, startValue) {
+        const selectedIndex = times.indexOf(startValue);
+        const endSelect = document.getElementById("endTime");
+        endSelect.innerHTML = "";
+        times.slice(selectedIndex + 1).forEach((time) => {
+          endSelect.add(new Option(time, time));
+        });
+      }
+
+      // --- 入力クリア ---
+      function clearInputs() {
+        document.getElementById("emojiSelect").value = "";
+        document.getElementById("locationSelect").value = "";
+        document.getElementById("customLocationInput").value = "";
+        document.getElementById("customLocationLabel").style.display = "none";
+        document.getElementById("customLocationInput").style.display = "none";
+        document.getElementById("titleSelect").value = "";
+        document.getElementById("customTitleInput").value = "";
+        document.getElementById("customTitleLabel").style.display = "none";
+        document.getElementById("customTitleInput").style.display = "none";
+        document.getElementById("startTime").selectedIndex = 0;
+        document.getElementById("endTime").innerHTML = "";
+      }
+
+      // --- 一時リスト描画 ---
+      function renderTempList() {
+        const area = document.getElementById("tempListArea");
+        area.innerHTML = "";
+        if (tempList.length === 0) {
+          document.getElementById("confirmBtn").style.display = "none";
+          return;
+        }
+        document.getElementById("confirmBtn").style.display = "block";
+        tempList.forEach((item, idx) => {
+          const div = document.createElement("div");
+          div.className = "schedule-item";
+          div.innerHTML = `<span>${item.display}</span>
+            <button onclick="removeTempSchedule(${idx})">削除</button>`;
+          area.appendChild(div);
+        });
+      }
+
+      // --- 一時リスト追加 ---
+      function addTempSchedule() {
+        const date = document.getElementById("dateInput").value;
+        const start = document.getElementById("startTime").value;
+        const end = document.getElementById("endTime").value;
+        const emoji = document.getElementById("emojiSelect").value;
+
+        const selectedTitle = document.getElementById("titleSelect").value;
+        const customTitle = document.getElementById("customTitleInput").value.trim();
+        const title = selectedTitle === "その他" ? customTitle : selectedTitle;
+
+        const selectedLocation = document.getElementById("locationSelect").value;
+        const customLocation = document.getElementById("customLocationInput").value.trim();
+        const location = selectedLocation === "その他" ? customLocation : selectedLocation;
+
+        if (!date || !title || (selectedLocation === "その他" && !customLocation)) {
+          alert("日付、タイトル、場所は必須です。");
+          return;
+        }
+        if (start && end && start >= end) {
+          alert("終了時間は開始時間より後にしてください。");
+          return;
+        }
+        const timeStr = start && end ? `${formatTime(start)}-${formatTime(end)}` : "h:m";
+        const display = `${date} ${timeStr}${emoji}${title}${location ? `(${location})` : ""}`;
+
+        // 重複チェック
+        if (tempList.some(e => e.display === display)) {
+          alert("同じ予定が一時リストにあります。");
+          return;
+        }
+        tempList.push({
+          date,
+          entry: `${timeStr}${emoji}${title}${location ? `(${location})` : ""}`,
+          display
+        });
+        renderTempList();
+        clearInputs();
+      }
+
+      // --- 一時リストから削除 ---
+      function removeTempSchedule(idx) {
+        tempList.splice(idx, 1);
+        renderTempList();
+      }
+
+      // --- 一時リストをscheduleに反映し、出力 ---
+      function confirmSchedules() {
+        tempList.forEach(item => {
+          if (!schedule[item.date]) schedule[item.date] = [];
+          if (!schedule[item.date].includes(item.entry)) {
+            schedule[item.date].push(item.entry);
+          }
+        });
+        // 日付ごとに時刻順ソート（時間未定"h:m"は先頭）
+        Object.keys(schedule).forEach(date => {
+          schedule[date].sort(compareScheduleEntries);
+        });
+        tempList.length = 0;
+        renderTempList();
+        renderOutput();
+      }
+
+      // --- 予定エントリ比較（時間未定は先頭） ---
+      function compareScheduleEntries(a, b) {
+        if (a.startsWith("h:m") && !b.startsWith("h:m")) return -1;
+        if (!a.startsWith("h:m") && b.startsWith("h:m")) return 1;
+        if (a.startsWith("h:m") && b.startsWith("h:m")) return 0;
+        // 通常の時間ソート
+        const getStart = (s) => {
+          const match = s.match(/^(\d+)(半)?-/);
+          if (!match) return 99;
+          return parseInt(match[1]) + (match[2] ? 0.5 : 0);
+        };
+        return getStart(a) - getStart(b);
+      }
+
+      // --- 出力描画 ---
       function renderOutput(options = {}) {
         const month = document.getElementById("monthSelect").value;
+        if (!month) return;
         const [year, mRaw] = month.split("-");
         const m = mRaw.padStart(2, "0");
         const lastDay = new Date(year, m, 0).getDate();
@@ -216,148 +364,10 @@
             output += `${dayStr}日(${weekday})\n`;
           }
         }
-
         document.getElementById("outputArea").textContent = output.trim();
       }
 
-      function populateTimeSelects() {
-        const times = [];
-        for (let h = 0; h < 24; h++) {
-          times.push(`${String(h).padStart(2, "0")}:00`);
-          times.push(`${String(h).padStart(2, "0")}:30`);
-        }
-        const startSelect = document.getElementById("startTime");
-        times.forEach((time) => {
-          startSelect.add(new Option(time, time));
-        });
-
-        startSelect.addEventListener("change", function () {
-          const selectedIndex = times.indexOf(this.value);
-          const endSelect = document.getElementById("endTime");
-          endSelect.innerHTML = "";
-          times.slice(selectedIndex + 1).forEach((time) => {
-            endSelect.add(new Option(time, time));
-          }); 
-        });
-      }
-
-function addSchedule() {
-  const date = document.getElementById("dateInput").value;
-  const start = document.getElementById("startTime").value;
-  const end = document.getElementById("endTime").value;
-  const emoji = document.getElementById("emojiSelect").value;
-
-  const selectedTitle = document.getElementById("titleSelect").value;
-  const customTitle = document.getElementById("customTitleInput").value.trim();
-  const title = selectedTitle === "その他" ? customTitle : selectedTitle;
-
-  const selectedLocation = document.getElementById("locationSelect").value;
-  const customLocation = document.getElementById("customLocationInput").value.trim();
-  const location = selectedLocation === "その他" ? customLocation : selectedLocation;
-
-  if (!date || !title || (selectedLocation === "その他" && !customLocation)) {
-    alert("日付、タイトル、場所は必須です。");
-    return;
-  }
-
-  if (start && end && start >= end) {
-    alert("終了時間は開始時間より後にしてください。");
-    return;
-  }
-
-  const timeStr =
-    start && end ? `${formatTime(start)}-${formatTime(end)}` : "HH:MM";
-
-  const newEntry = `${timeStr}${emoji}${title}${location ? `(${location})` : ""}`;
-  if (!schedule[date]) schedule[date] = [];
-
-  if (schedule[date].includes(newEntry)) {
-    alert("同じ予定がすでに登録されています。");
-    return;
-  }
-
-  schedule[date].push(newEntry);
-  schedule[date].sort((a, b) => {
-    const getStart = (s) => {
-      const match = s.match(/^(\d+)(半)?-/);
-      if (!match) return 99; // 時間未定のものを後ろにする
-      return parseInt(match[1]) + (match[2] ? 0.5 : 0);
-    };
-    return getStart(a) - getStart(b);
-  });
-
-  renderOutput();
-  clearInputs();
-}
-
-      function deleteSelectedEntry() {
-        const date = document.getElementById("dateInput").value;
-        const start = document.getElementById("startTime").value;
-        const end = document.getElementById("endTime").value;
-        const emoji = document.getElementById("emojiSelect").value;
-
-        const selectedTitle = document.getElementById("titleSelect").value;
-        const customTitle = document
-          .getElementById("customTitleInput")
-          .value.trim();
-        const title = selectedTitle === "その他" ? customTitle : selectedTitle;
-
-        const selectedLocation =
-          document.getElementById("locationSelect").value;
-        const customLocation = document
-          .getElementById("customLocationInput")
-          .value.trim();
-        const location =
-          selectedLocation === "その他" ? customLocation : selectedLocation;
-
-        if (
-          !date ||
-          !start ||
-          !end ||
-          !title ||
-          (selectedLocation === "その他" && !customLocation)
-        ) {
-          alert("すべての項目を入力してください。");
-          return;
-        }
-
-        const timeStr = `${formatTime(start)}-${formatTime(end)}`;
-        const targetEntry = `${timeStr}${emoji}${title}${
-          location ? `(${location})` : ""
-        }`;
-
-        if (!schedule[date]) {
-          alert("この日付には予定がありません。");
-          return;
-        }
-
-        const index = schedule[date].indexOf(targetEntry);
-        if (index !== -1) {
-          schedule[date].splice(index, 1);
-          if (schedule[date].length === 0) {
-            delete schedule[date];
-          }
-          renderOutput();
-          alert("予定を削除しました。");
-        } else {
-          alert("一致する予定が見つかりませんでした。");
-        }
-      }
-
-      function clearInputs() {
-        document.getElementById("emojiSelect").value = "";
-        document.getElementById("locationSelect").value = "";
-        document.getElementById("customLocationInput").value = "";
-        document.getElementById("customLocationLabel").style.display = "none";
-        document.getElementById("customLocationInput").style.display = "none";
-        document.getElementById("titleSelect").value = "";
-        document.getElementById("customTitleInput").value = "";
-        document.getElementById("customTitleLabel").style.display = "none";
-        document.getElementById("customTitleInput").style.display = "none";
-        document.getElementById("startTime").selectedIndex = 0;
-        document.getElementById("endTime").innerHTML = "";
-      }
-
+      // --- 出力コピー ---
       function copyOutput() {
         const outputText = document.getElementById("outputArea").textContent;
         navigator.clipboard.writeText(outputText).then(() => {
@@ -365,10 +375,12 @@ function addSchedule() {
         });
       }
 
+      // --- 過去予定を非表示 ---
       function deletePastEntries() {
         renderOutput({ hidePast: true });
       }
 
+      // --- 月初期値セット ---
       function setDefaultMonth() {
         const today = new Date();
         const year = today.getFullYear();
@@ -377,13 +389,11 @@ function addSchedule() {
         const displayMonth = day <= 15 ? month : month + 1;
         const correctedMonth = displayMonth > 12 ? 1 : displayMonth;
         const correctedYear = displayMonth > 12 ? year + 1 : year;
-        const formatted = `${correctedYear}-${String(correctedMonth).padStart(
-          2,
-          "0"
-        )}`;
+        const formatted = `${correctedYear}-${String(correctedMonth).padStart(2, "0")}`;
         document.getElementById("monthSelect").value = formatted;
       }
 
+      // --- 月選択に合わせて日付も同期 ---
       function syncDateInputWithMonth() {
         const monthValue = document.getElementById("monthSelect").value;
         if (monthValue) {
@@ -391,35 +401,25 @@ function addSchedule() {
         }
       }
 
+      // --- イベント登録 ---
       document.getElementById("monthSelect").addEventListener("change", () => {
         syncDateInputWithMonth();
         renderOutput();
       });
 
-      document
-        .getElementById("titleSelect")
-        .addEventListener("change", function () {
-          const isOther = this.value === "その他";
-          document.getElementById("customTitleLabel").style.display = isOther
-            ? "block"
-            : "none";
-          document.getElementById("customTitleInput").style.display = isOther
-            ? "block"
-            : "none";
-        });
+      document.getElementById("titleSelect").addEventListener("change", function () {
+        const isOther = this.value === "その他";
+        document.getElementById("customTitleLabel").style.display = isOther ? "block" : "none";
+        document.getElementById("customTitleInput").style.display = isOther ? "block" : "none";
+      });
 
-      document
-        .getElementById("locationSelect")
-        .addEventListener("change", function () {
-          const isOther = this.value === "その他";
-          document.getElementById("customLocationLabel").style.display = isOther
-            ? "block"
-            : "none";
-          document.getElementById("customLocationInput").style.display = isOther
-            ? "block"
-            : "none";
-        });
+      document.getElementById("locationSelect").addEventListener("change", function () {
+        const isOther = this.value === "その他";
+        document.getElementById("customLocationLabel").style.display = isOther ? "block" : "none";
+        document.getElementById("customLocationInput").style.display = isOther ? "block" : "none";
+      });
 
+      // --- 初期化 ---
       window.onload = () => {
         setDefaultMonth();
         syncDateInputWithMonth();
